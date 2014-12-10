@@ -1,0 +1,106 @@
+#!/usr/bin/env node
+var argv = require('minimist')(process.argv.slice(2)),
+	Model = require('./lib/model/model.js'),
+	request = require("request"),
+	marked = require('marked'),
+	dateFormat = require('dateformat'),
+	hljs = require('highlight.js'),
+	config = require('./config.json'),
+	cheerio = require('cheerio'),
+	cwd = process.cwd(),
+	fs = require('fs-extra'),
+	exec = require('child_process').exec,
+	colors = require('colors'),
+	cmd_process = require('./lib/cmd/cmd.js'),
+	cmd_init = require('./lib/cmd/init.js'),
+	cmd_new = require('./lib/cmd/new.js'),
+	cmd_list = require('./lib/cmd/list.js');
+var runtime = {
+	cwd:cwd,
+	argv:argv,
+	dirname:__dirname
+}
+cmd_process(runtime);
+
+
+
+
+/**
+ * 将生成的文件push到github中
+ **/
+function gitPush (){
+	//检查参数
+	var githubURL	= config.github,
+		branch		= config.branch,
+		github_user	= config.github_user,
+		github_pwd	= config.github_pwd;
+	if(githubURL == ""){
+		console.log("未配置Github Repository地址，请在config.json中配置github项".yellow);
+		return;
+	}
+	exec("git",
+	  function (error, stdout, stderr) {
+	    if (stderr) {
+	      console.log("错误：可能未安装git\r\n"+stderr);
+	      return;
+	    }
+	    //判断是否存在.github/.git目录
+	    if(fs.existsSync(cwd+"/.github/.git")){
+	    	var cmd = "git rm -r .";
+		    exec(cmd,{cwd:cwd+"/.github"},function(error, stdout, stderr){
+		    	console.log(stderr);
+		    	fs.move(cwd+'/dist', cwd+'/.github', function(err){
+				  if (err) {
+				  	console.log(err);
+				  	return;
+				  }
+				  	var cmd = "git add . --all";
+		    		exec(cmd,{cwd:cwd+"/.github"},function(error, stdout, stderr){
+		    			console.log(stderr);
+		    			var cmd = "git commit -m 'sad'";
+			    		exec(cmd,{cwd:cwd+"/.github"},function(error, stdout, stderr){
+			    			console.log(stderr);
+			    			var cmd = "git push";
+				    		exec(cmd,{cwd:cwd+"/.github"},function(error, stdout, stderr){
+				    			console.log(stderr);
+				    		});
+			    		});
+		    		});
+					
+				});
+		    });
+	    	return;
+	    }else{
+	    	var cmd = "git clone "+githubURL+" ./.github";
+			exec(cmd,
+			  function (error, stdout, stderr) {
+			    console.log(stderr);
+			    var cmd = "git rm -r .";
+			    exec(cmd,{cwd:cwd+"/.github"},function(error, stdout, stderr){
+			    	console.log(stderr);
+			    	fs.move(cwd+'/dist', cwd+'/.github', function(err){
+					  if (err) {
+					  	console.log(err);
+					  	return;
+					  }
+						var cmd = "git add . --all";
+			    		exec(cmd,{cwd:cwd+"/.github"},function(error, stdout, stderr){
+			    			console.log(stderr);
+			    			var cmd = "git commit -m 'sad'";
+				    		exec(cmd,{cwd:cwd+"/.github"},function(error, stdout, stderr){
+				    			console.log(stderr);
+				    			var cmd = "git push";
+					    		exec(cmd,{cwd:cwd+"/.github"},function(error, stdout, stderr){
+					    			console.log(stderr);
+					    		});
+				    		});
+			    		});
+					});
+			    });
+			});
+	    	return;
+	    }
+	    
+	});
+	
+}
